@@ -161,12 +161,22 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
           )}
 
           {fileInfo.mediaType === 'image' && (
-            /* eslint-disable-next-line @next/next/no-img-element */
-            <img
-              src={fileInfo.directUrl}
-              alt={fileInfo.fileName}
-              className="max-h-[70vh] max-w-full rounded-lg object-contain"
-            />
+            <div className="flex items-center justify-center p-2 max-h-[72vh] overflow-auto">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`${fileInfo.streamUrl}${fileInfo.streamUrl.includes('?') ? '&' : '?'}inline=true`}
+                alt={fileInfo.fileName}
+                className="max-h-[68vh] max-w-full rounded-xl object-contain shadow-2xl transition-all"
+                onError={(e) => {
+                  // Fallback to Google Drive high-resolution thumbnail if direct stream encounters an issue
+                  const target = e.currentTarget;
+                  const fallbackUrl = `https://drive.google.com/thumbnail?id=${fileInfo.fileId}&sz=w2048`;
+                  if (target.src !== fallbackUrl) {
+                    target.src = fallbackUrl;
+                  }
+                }}
+              />
+            </div>
           )}
 
           {fileInfo.mediaType === 'pdf' && (

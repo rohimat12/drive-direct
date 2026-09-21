@@ -77,17 +77,29 @@ export async function GET(req: NextRequest) {
         'content-disposition',
         `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`
       );
-    } else if (isInline || fileName.toLowerCase().endsWith('.pdf')) {
-      // If inline preview requested
-      if (fileName.toLowerCase().endsWith('.pdf')) {
+    } else if (isInline || fileName.match(/\.(pdf|jpe?g|png|webp|gif|svg|mp4|webm|mp3)$/i)) {
+      // If inline preview requested or known media extension
+      const lower = fileName.toLowerCase();
+      if (lower.endsWith('.pdf')) {
         responseHeaders.set('content-type', 'application/pdf');
-        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
-      } else if (fileName.toLowerCase().endsWith('.mp4')) {
+      } else if (lower.endsWith('.mp4')) {
         responseHeaders.set('content-type', 'video/mp4');
-        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
-      } else {
-        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
+      } else if (lower.endsWith('.webm')) {
+        responseHeaders.set('content-type', 'video/webm');
+      } else if (lower.endsWith('.jpg') || lower.endsWith('.jpeg')) {
+        responseHeaders.set('content-type', 'image/jpeg');
+      } else if (lower.endsWith('.png')) {
+        responseHeaders.set('content-type', 'image/png');
+      } else if (lower.endsWith('.webp')) {
+        responseHeaders.set('content-type', 'image/webp');
+      } else if (lower.endsWith('.gif')) {
+        responseHeaders.set('content-type', 'image/gif');
+      } else if (lower.endsWith('.svg')) {
+        responseHeaders.set('content-type', 'image/svg+xml');
+      } else if (lower.endsWith('.mp3')) {
+        responseHeaders.set('content-type', 'audio/mpeg');
       }
+      responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
     }
 
     // Allow iframe embedding within our own application

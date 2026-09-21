@@ -296,10 +296,21 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
     }
 
     let resolvedContentType = contentType;
-    if (fileName.toLowerCase().endsWith('.pdf') && resolvedContentType.includes('octet-stream')) {
+    const lowerName = fileName.toLowerCase();
+    if (lowerName.endsWith('.pdf') && resolvedContentType.includes('octet-stream')) {
       resolvedContentType = 'application/pdf';
-    } else if (fileName.toLowerCase().endsWith('.mp4') && resolvedContentType.includes('octet-stream')) {
+    } else if (lowerName.endsWith('.mp4') && resolvedContentType.includes('octet-stream')) {
       resolvedContentType = 'video/mp4';
+    } else if (lowerName.endsWith('.webm') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'video/webm';
+    } else if ((lowerName.endsWith('.jpg') || lowerName.endsWith('.jpeg')) && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/jpeg';
+    } else if (lowerName.endsWith('.png') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/png';
+    } else if (lowerName.endsWith('.webp') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/webp';
+    } else if (lowerName.endsWith('.gif') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/gif';
     }
 
     const mediaType = detectMediaType(resolvedContentType, fileName);
