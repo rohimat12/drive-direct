@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# scratch & test files
+/scratch/
+*.mp4
+test-download.mjs
+download-file.mjs
+
