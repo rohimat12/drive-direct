@@ -11,7 +11,7 @@ export default function ContactPage() {
   const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
 
-  const supportEmail = 'support@drive-direct.vercel.app';
+  const supportEmail = 'rohimat.uus@gmail.com';
 
   const getMailtoUrl = () => {
     const subject = encodeURIComponent(`[DriveDirect Contact] Pertanyaan dari ${formData.name || 'Pengguna'}`);
@@ -65,10 +65,10 @@ export default function ContactPage() {
                 Kirim pesan langsung ke tim pengembang kami untuk pertanyaan umum atau kerja sama:
               </p>
               <a
-                href="mailto:support@drive-direct.vercel.app"
+                href={`mailto:${supportEmail}`}
                 className="text-xs font-mono text-cyan-400 hover:underline block break-all"
               >
-                support@drive-direct.vercel.app
+                {supportEmail}
               </a>
             </div>
 
