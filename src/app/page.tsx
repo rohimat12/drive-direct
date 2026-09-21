@@ -6,6 +6,10 @@ import UrlInputCard from '@/components/UrlInputCard';
 import FileResultCard from '@/components/FileResultCard';
 import MediaPreviewModal from '@/components/MediaPreviewModal';
 import HistoryList from '@/components/HistoryList';
+import HowToUseSection from '@/components/HowToUseSection';
+import FeaturesExplanationSection from '@/components/FeaturesExplanationSection';
+import FaqSection from '@/components/FaqSection';
+import Footer from '@/components/Footer';
 import { DriveFileInfo } from '@/lib/drive';
 import { AlertCircle, Zap, ShieldCheck, Cpu, HardDrive, RefreshCw } from 'lucide-react';
 
@@ -203,14 +207,19 @@ export default function Home() {
             </div>
           </div>
         </div>
+
+        {/* Cara Menggunakan Section */}
+        <HowToUseSection />
+
+        {/* Panduan Mendalam & Edukasi Fitur (AdSense High-Value Content) */}
+        <FeaturesExplanationSection />
+
+        {/* FAQ Section */}
+        <FaqSection />
       </main>
 
-      {/* Footer */}
-      <footer className="relative z-10 border-t border-white/5 bg-slate-950/80 py-6 text-center text-xs text-slate-500">
-        <p>
-          DriveDirect • Dibangun dengan Next.js App Router &amp; Tailwind CSS v4.
-        </p>
-      </footer>
+      {/* Comprehensive Footer */}
+      <Footer />
 
       {/* Media Preview Modal */}
       <MediaPreviewModal
