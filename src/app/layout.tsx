@@ -74,24 +74,39 @@ export const metadata: Metadata = {
 
 const jsonLd = {
   '@context': 'https://schema.org',
-  '@type': 'WebApplication',
-  name: 'DriveDirect',
-  url: siteUrl,
-  description:
-    'Aplikasi web untuk mengonversi link Google Drive publik menjadi direct download link 1-klik dengan pemutar media dan PDF viewer in-app.',
-  applicationCategory: 'UtilitiesApplication',
-  operatingSystem: 'All',
-  offers: {
-    '@type': 'Offer',
-    price: '0',
-    priceCurrency: 'USD',
-  },
-  featureList: [
-    '1-Click Google Drive Direct CDN Download',
-    'Automatic Large File Virus Scan Bypass',
-    'In-App Video & Audio Streaming with Range Seeking',
-    'HTML5 Canvas PDF Document Viewer',
-    'cURL, Wget, and Aria2/IDM Command Generator',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${siteUrl}/#website`,
+      url: siteUrl,
+      name: 'DriveDirect',
+      alternateName: ['Drive Direct', 'DriveDirect App', 'DriveDirect GDrive Downloader'],
+      description:
+        'Konversi link Google Drive menjadi direct download link 1-klik, bypass batas preview, inspect nama & ukuran file asli, serta putar video dan dokumen PDF langsung di browser.',
+      inLanguage: 'id-ID',
+    },
+    {
+      '@type': 'WebApplication',
+      '@id': `${siteUrl}/#webapp`,
+      name: 'DriveDirect',
+      url: siteUrl,
+      description:
+        'Aplikasi web untuk mengonversi link Google Drive publik menjadi direct download link 1-klik dengan pemutar media dan PDF viewer in-app.',
+      applicationCategory: 'UtilitiesApplication',
+      operatingSystem: 'All',
+      offers: {
+        '@type': 'Offer',
+        price: '0',
+        priceCurrency: 'USD',
+      },
+      featureList: [
+        '1-Click Google Drive Direct CDN Download',
+        'Automatic Large File Virus Scan Bypass',
+        'In-App Video & Audio Streaming with Range Seeking',
+        'HTML5 Canvas PDF Document Viewer',
+        'cURL, Wget, and Aria2/IDM Command Generator',
+      ],
+    },
   ],
 };
 
