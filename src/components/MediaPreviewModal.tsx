@@ -172,12 +172,23 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
           {fileInfo.mediaType === 'pdf' && (
             <div className="relative h-[72vh] w-full rounded-lg overflow-hidden bg-slate-950 border border-white/5">
               {pdfMode === 'google' ? (
-                <iframe
-                  src={googlePreviewUrl}
-                  className="h-full w-full border-0"
-                  title={fileInfo.fileName}
-                  allow="autoplay"
-                />
+                <div className="relative h-full w-full">
+                  <div className="absolute top-3 right-3 z-10">
+                    <button
+                      type="button"
+                      onClick={() => setPdfMode('native')}
+                      className="px-2.5 py-1 text-xs font-medium bg-slate-900/90 hover:bg-slate-800 text-cyan-300 rounded-lg border border-white/10 shadow-lg backdrop-blur-md transition"
+                    >
+                      Beralih ke Native PDF
+                    </button>
+                  </div>
+                  <iframe
+                    src={googlePreviewUrl}
+                    className="h-full w-full border-0"
+                    title={fileInfo.fileName}
+                    allow="autoplay"
+                  />
+                </div>
               ) : (
                 <PdfCanvasViewer
                   url={nativePdfUrl}

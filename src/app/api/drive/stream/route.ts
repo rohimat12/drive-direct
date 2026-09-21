@@ -66,23 +66,27 @@ export async function GET(req: NextRequest) {
     const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
     let fileName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/["']/g, '')) : `download_${fileId}`;
 
+    // Clean ASCII fallback (keeps spaces intact, avoids %20 in legacy browsers) and UTF-8 encoded parameter per RFC 6266
+    const asciiFallback = fileName.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"');
+    const utf8Encoded = encodeURIComponent(fileName);
+
     // If explicit download requested via proxy
     if (isDownload) {
       // Force attachment disposition so browser triggers file save dialog with exact filename
       responseHeaders.set(
         'content-disposition',
-        `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
+        `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`
       );
     } else if (isInline || fileName.toLowerCase().endsWith('.pdf')) {
       // If inline preview requested
       if (fileName.toLowerCase().endsWith('.pdf')) {
         responseHeaders.set('content-type', 'application/pdf');
-        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
       } else if (fileName.toLowerCase().endsWith('.mp4')) {
         responseHeaders.set('content-type', 'video/mp4');
-        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
       } else {
-        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`);
       }
     }
 

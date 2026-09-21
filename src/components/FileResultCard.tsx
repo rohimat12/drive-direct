@@ -67,9 +67,9 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
     }
   };
 
-  // Sanitize filename and URL to prevent terminal injection
-  const safeFileName = fileInfo.fileName.replace(/["\\$`!]/g, '_');
-  const safeDirectUrl = fileInfo.directUrl.replace(/"/g, '%22');
+  // Sanitize filename and URL to prevent terminal injection and multi-line breaks
+  const safeFileName = fileInfo.fileName.replace(/[\r\n\t"\\$`!;|&><]/g, '_');
+  const safeDirectUrl = fileInfo.directUrl.replace(/[\r\n"\\$`]/g, '');
 
   const curlCommand = `curl -L -o "${safeFileName}" "${safeDirectUrl}"`;
   const wgetCommand = `wget --content-disposition -O "${safeFileName}" "${safeDirectUrl}"`;
