@@ -3,17 +3,36 @@
 import React, { useState } from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
-import { Mail, MessageSquare, Send, CheckCircle2, Code2 } from 'lucide-react';
+import { Mail, MessageSquare, Send, CheckCircle2, Code2, Copy, Check } from 'lucide-react';
 import Link from 'next/link';
 
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+
+  const supportEmail = 'support@drive-direct.vercel.app';
+
+  const getMailtoUrl = () => {
+    const subject = encodeURIComponent(`[DriveDirect Contact] Pertanyaan dari ${formData.name || 'Pengguna'}`);
+    const body = encodeURIComponent(
+      `Nama: ${formData.name}\nEmail: ${formData.email}\n\nPesan:\n${formData.message}\n\n--\nDikirim melalui form kontak DriveDirect`
+    );
+    return `mailto:${supportEmail}?subject=${subject}&body=${body}`;
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Front-end confirmation
+    const mailtoUrl = getMailtoUrl();
+    window.location.href = mailtoUrl;
     setSubmitted(true);
+  };
+
+  const handleCopyMessage = () => {
+    const fullText = `Kepada: ${supportEmail}\nSubjek: [DriveDirect Contact] Pertanyaan dari ${formData.name}\n\nNama: ${formData.name}\nEmail Pengirim: ${formData.email}\n\nPesan:\n${formData.message}`;
+    navigator.clipboard.writeText(fullText);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 3000);
   };
 
   return (
@@ -75,23 +94,57 @@ export default function ContactPage() {
           {/* Form Side */}
           <div className="glass-panel rounded-2xl p-6 sm:p-8 md:col-span-2">
             {submitted ? (
-              <div className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+              <div className="py-10 flex flex-col items-center justify-center text-center space-y-4">
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-8 ring-emerald-500/10">
                   <CheckCircle2 className="h-8 w-8" />
                 </div>
-                <h3 className="text-lg font-bold text-white">Pesan Anda Berhasil Terkirim!</h3>
-                <p className="text-xs text-slate-400 max-w-md leading-relaxed">
-                  Terima kasih atas pesan dan masukan Anda. Tim kami akan meninjau dan merespons pertanyaan Anda secepat mungkin.
-                </p>
+                <div className="space-y-1 max-w-md">
+                  <h3 className="text-lg font-bold text-white">Aplikasi Email Terbuka!</h3>
+                  <p className="text-xs text-slate-300 leading-relaxed">
+                    Formulir telah mengalihkan draf pesan ke aplikasi email Anda untuk dikirimkan ke <strong className="text-cyan-400">{supportEmail}</strong>.
+                  </p>
+                  <p className="text-[11px] text-slate-400">
+                    Jika aplikasi email Anda tidak terbuka otomatis, silakan salin teks pesan atau buka link di bawah:
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <a
+                    href={getMailtoUrl()}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-white bg-cyan-600 hover:bg-cyan-500 rounded-xl transition shadow-lg shadow-cyan-600/20"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    <span>Buka Aplikasi Email</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    onClick={handleCopyMessage}
+                    className="inline-flex items-center gap-1.5 px-4 py-2.5 text-xs font-semibold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-white/10 rounded-xl transition"
+                  >
+                    {copied ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-emerald-400">Tersalin ke Clipboard!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5 text-cyan-400" />
+                        <span>Salin Teks Pesan</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
                 <button
                   type="button"
                   onClick={() => {
                     setSubmitted(false);
                     setFormData({ name: '', email: '', message: '' });
                   }}
-                  className="mt-4 px-4 py-2 text-xs font-semibold text-white bg-slate-800 hover:bg-slate-700 rounded-xl transition"
+                  className="mt-2 text-xs text-slate-400 hover:text-slate-200 underline underline-offset-4 transition"
                 >
-                  Kirim Pesan Lainnya
+                  Tulis Pesan Baru
                 </button>
               </div>
             ) : (

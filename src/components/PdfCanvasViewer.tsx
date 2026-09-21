@@ -14,20 +14,52 @@ import {
 
 interface PdfCanvasViewerProps {
   url: string;
-  fileName?: string;
+}
+
+interface PdfViewport {
+  width: number;
+  height: number;
+}
+
+interface PdfRenderTask {
+  promise: Promise<void>;
+  cancel: () => void;
+}
+
+interface PdfPage {
+  getViewport: (options: { scale: number; rotation: number }) => PdfViewport;
+  render: (renderContext: {
+    canvasContext: CanvasRenderingContext2D;
+    transform?: number[];
+    viewport: PdfViewport;
+  }) => PdfRenderTask;
+}
+
+interface PdfDocument {
+  numPages: number;
+  getPage: (pageNumber: number) => Promise<PdfPage>;
+}
+
+interface PdfJsLib {
+  GlobalWorkerOptions: {
+    workerSrc: string;
+  };
+  getDocument: (options: { url: string; withCredentials?: boolean }) => {
+    promise: Promise<PdfDocument>;
+  };
 }
 
 declare global {
   interface Window {
-    pdfjsLib?: any;
+    pdfjsLib?: PdfJsLib;
   }
 }
 
-export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps) {
+export default function PdfCanvasViewer({ url }: PdfCanvasViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const renderTaskRef = useRef<any>(null);
+  const renderTaskRef = useRef<PdfRenderTask | null>(null);
 
-  const [pdfDoc, setPdfDoc] = useState<any>(null);
+  const [pdfDoc, setPdfDoc] = useState<PdfDocument | null>(null);
   const [pageNum, setPageNum] = useState(1);
   const [numPages, setNumPages] = useState(0);
   const [scale, setScale] = useState(1.2);
@@ -36,7 +68,7 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
   const [error, setError] = useState<string | null>(null);
 
   // Load PDF.js library
-  const loadPdfJs = useCallback((): Promise<any> => {
+  const loadPdfJs = useCallback((): Promise<PdfJsLib> => {
     return new Promise((resolve, reject) => {
       if (window.pdfjsLib) {
         resolve(window.pdfjsLib);
@@ -63,8 +95,14 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
   // Fetch and parse document
   useEffect(() => {
     let isCancelled = false;
-    setLoading(true);
-    setError(null);
+
+    // Asynchronously update status to avoid synchronous cascading renders
+    const timer = setTimeout(() => {
+      if (!isCancelled) {
+        setLoading(true);
+        setError(null);
+      }
+    }, 0);
 
     loadPdfJs()
       .then((pdfjs) => {
@@ -75,7 +113,7 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
 
         return loadingTask.promise;
       })
-      .then((doc: any) => {
+      .then((doc: PdfDocument) => {
         if (!isCancelled) {
           setPdfDoc(doc);
           setNumPages(doc.numPages);
@@ -83,16 +121,18 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
           setLoading(false);
         }
       })
-      .catch((err: any) => {
+      .catch((err: unknown) => {
         if (!isCancelled) {
+          const errorObj = err as Error;
           console.error('PDF load error:', err);
-          setError(err.message || 'Gagal memuat file PDF.');
+          setError(errorObj.message || 'Gagal memuat file PDF.');
           setLoading(false);
         }
       });
 
     return () => {
       isCancelled = true;
+      clearTimeout(timer);
     };
   }, [url, loadPdfJs]);
 
@@ -131,8 +171,9 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
         const renderTask = page.render(renderContext);
         renderTaskRef.current = renderTask;
         await renderTask.promise;
-      } catch (err: any) {
-        if (err?.name !== 'RenderingCancelledException') {
+      } catch (err: unknown) {
+        const errorObj = err as Error;
+        if (errorObj?.name !== 'RenderingCancelledException') {
           console.error('Error rendering page:', err);
         }
       }
@@ -158,115 +199,106 @@ export default function PdfCanvasViewer({ url, fileName }: PdfCanvasViewerProps)
     <div className="flex flex-col h-full w-full bg-slate-950 overflow-hidden select-none">
       {/* PDF Controls Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/10 bg-slate-900/90 px-4 py-2 text-xs text-slate-300 shrink-0">
-        {/* Page navigation */}
+        {/* Pagination */}
         <div className="flex items-center gap-1.5">
           <button
-            type="button"
             onClick={() => changePage(-1)}
             disabled={pageNum <= 1 || loading}
-            className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition"
             title="Halaman Sebelumnya"
           >
             <ChevronLeft className="h-4 w-4" />
           </button>
 
-          <span className="font-mono text-xs px-2 py-0.5 rounded bg-slate-950 border border-white/5">
-            {pageNum} / {numPages || 1}
+          <span className="font-mono text-[11px] px-1">
+            {loading ? '...' : `${pageNum} / ${numPages || 1}`}
           </span>
 
           <button
-            type="button"
             onClick={() => changePage(1)}
             disabled={pageNum >= numPages || loading}
-            className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 disabled:cursor-not-allowed transition"
+            className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 disabled:pointer-events-none transition"
             title="Halaman Selanjutnya"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
         </div>
 
-        {/* Zoom & Rotation controls */}
-        <div className="flex items-center gap-1.5">
+        {/* Zoom & Rotation */}
+        <div className="flex items-center gap-2">
           <button
-            type="button"
             onClick={zoomOut}
-            disabled={loading}
+            disabled={scale <= 0.5 || loading}
             className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 transition"
-            title="Perkecil"
+            title="Perkecil (-)"
           >
             <ZoomOut className="h-4 w-4" />
           </button>
 
-          <span className="font-mono text-xs text-slate-400 w-12 text-center">
+          <span className="font-mono text-[11px] w-12 text-center">
             {Math.round(scale * 100)}%
           </span>
 
           <button
-            type="button"
             onClick={zoomIn}
-            disabled={loading}
+            disabled={scale >= 3.0 || loading}
             className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 transition"
-            title="Perbesar"
+            title="Perbesar (+)"
           >
             <ZoomIn className="h-4 w-4" />
           </button>
 
-          <div className="h-3.5 w-px bg-white/10 mx-1" />
+          <div className="h-4 w-px bg-white/10 mx-1" />
 
           <button
-            type="button"
             onClick={rotate}
             disabled={loading}
             className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 transition"
-            title="Putar Dokumen"
+            title="Putar 90 Derajat"
           >
-            <RotateCw className="h-3.5 w-3.5" />
+            <RotateCw className="h-4 w-4" />
           </button>
 
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="p-1 rounded hover:bg-slate-800 transition text-cyan-400"
-            title="Buka PDF di Tab Baru"
+          <button
+            onClick={() => {
+              setScale(1.2);
+              setRotation(0);
+            }}
+            disabled={loading}
+            className="p-1 rounded hover:bg-slate-800 disabled:opacity-30 transition"
+            title="Reset Tampilan"
           >
-            <Maximize2 className="h-3.5 w-3.5" />
-          </a>
+            <Maximize2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      {/* Canvas Viewport Area */}
-      <div className="relative flex-1 overflow-auto p-4 flex items-center justify-center bg-slate-950/80">
+      {/* Main Canvas Scroll Area */}
+      <div className="flex-1 overflow-auto p-4 flex items-center justify-center relative bg-slate-950/80">
         {loading && (
-          <div className="flex flex-col items-center gap-2 text-slate-400">
+          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-slate-950/90 backdrop-blur-sm">
             <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-            <span className="text-xs">Memuat dokumen PDF...</span>
+            <p className="text-xs text-slate-400 font-medium">Memuat dan merender PDF via HTML5 Canvas...</p>
           </div>
         )}
 
         {error && (
-          <div className="flex flex-col items-center gap-3 p-6 text-center max-w-md">
-            <AlertCircle className="h-10 w-10 text-rose-400" />
-            <div className="space-y-1">
-              <p className="text-sm font-semibold text-rose-300">Gagal Merender PDF</p>
-              <p className="text-xs text-slate-400 leading-relaxed">{error}</p>
+          <div className="max-w-md p-4 rounded-xl border border-rose-500/20 bg-rose-500/10 text-rose-300 flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+            <div className="space-y-1 text-xs">
+              <p className="font-semibold">Gagal Menampilkan PDF Native</p>
+              <p className="text-slate-400">{error}</p>
+              <p className="text-[11px] text-cyan-400 pt-1">
+                Tip: Gunakan tombol &quot;Mode Google Viewer&quot; di atas untuk membuka via antarmuka standar.
+              </p>
             </div>
-            <a
-              href={url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-cyan-600 rounded-lg hover:bg-cyan-500 transition"
-            >
-              <Maximize2 className="h-3.5 w-3.5" />
-              <span>Buka Langsung di Tab Baru</span>
-            </a>
           </div>
         )}
 
         <canvas
           ref={canvasRef}
           className={`shadow-2xl rounded-sm transition-opacity duration-200 ${
-            loading || error ? 'hidden' : 'block'
+            loading || error ? 'opacity-0' : 'opacity-100'
           }`}
         />
       </div>

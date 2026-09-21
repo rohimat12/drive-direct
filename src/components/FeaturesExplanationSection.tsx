@@ -3,15 +3,11 @@ import {
   ShieldAlert, 
   Terminal, 
   Film, 
-  FileCheck2, 
   Zap, 
   Check, 
   X, 
-  HelpCircle,
   Sparkles,
-  Server,
-  Layers,
-  FileCode2
+  Layers
 } from 'lucide-react';
 
 export default function FeaturesExplanationSection() {

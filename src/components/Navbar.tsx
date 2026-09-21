@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { HardDriveDownload, Sparkles, ShieldCheck } from 'lucide-react';
+import { HardDriveDownload, ShieldCheck } from 'lucide-react';
 
 export default function Navbar() {
   return (

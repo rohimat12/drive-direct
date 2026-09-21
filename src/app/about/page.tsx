@@ -2,7 +2,7 @@ import React from 'react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import { Metadata } from 'next';
-import { HardDriveDownload, ShieldCheck, Zap, Heart, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Zap, Heart, CheckCircle2 } from 'lucide-react';
 import Link from 'next/link';
 
 export const metadata: Metadata = {

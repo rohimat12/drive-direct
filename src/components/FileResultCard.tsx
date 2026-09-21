@@ -7,15 +7,12 @@ import {
   Check,
   Play,
   Terminal,
-  ExternalLink,
   Film,
   Volume2,
   FileArchive,
   FileCode,
   FileText,
   File,
-  Sparkles,
-  Info,
   AlertTriangle,
 } from 'lucide-react';
 import { DriveFileInfo } from '@/lib/drive';
@@ -28,10 +25,11 @@ interface FileResultCardProps {
 export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCardProps) {
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedCurl, setCopiedCurl] = useState(false);
+  const [copiedWget, setCopiedWget] = useState(false);
   const [copiedAria, setCopiedAria] = useState(false);
-  const [activeTab, setActiveTab] = useState<'link' | 'curl' | 'aria' | 'idm'>('link');
+  const [activeTab, setActiveTab] = useState<'link' | 'curl' | 'wget' | 'aria'>('link');
 
-  const copyToClipboard = async (text: string, type: 'link' | 'curl' | 'aria') => {
+  const copyToClipboard = async (text: string, type: 'link' | 'curl' | 'wget' | 'aria') => {
     try {
       await navigator.clipboard.writeText(text);
       if (type === 'link') {
@@ -40,6 +38,9 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
       } else if (type === 'curl') {
         setCopiedCurl(true);
         setTimeout(() => setCopiedCurl(false), 2000);
+      } else if (type === 'wget') {
+        setCopiedWget(true);
+        setTimeout(() => setCopiedWget(false), 2000);
       } else if (type === 'aria') {
         setCopiedAria(true);
         setTimeout(() => setCopiedAria(false), 2000);
@@ -206,6 +207,16 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
               cURL
             </button>
             <button
+              onClick={() => setActiveTab('wget')}
+              className={`px-2.5 py-1 rounded-lg transition ${
+                activeTab === 'wget'
+                  ? 'bg-cyan-500 text-white font-medium shadow-sm'
+                  : 'text-slate-400 hover:text-white'
+              }`}
+            >
+              Wget
+            </button>
+            <button
               onClick={() => setActiveTab('aria')}
               className={`px-2.5 py-1 rounded-lg transition ${
                 activeTab === 'aria'
@@ -244,6 +255,20 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
                 className="shrink-0 p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
               >
                 {copiedCurl ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
+              </button>
+            </div>
+          )}
+
+          {activeTab === 'wget' && (
+            <div className="flex items-center justify-between gap-4">
+              <span className="text-amber-300 break-all select-all font-mono">
+                {wgetCommand}
+              </span>
+              <button
+                onClick={() => copyToClipboard(wgetCommand, 'wget')}
+                className="shrink-0 p-1.5 rounded-lg bg-slate-800 text-slate-300 hover:text-white hover:bg-slate-700 transition"
+              >
+                {copiedWget ? <Check className="h-4 w-4 text-emerald-400" /> : <Copy className="h-4 w-4" />}
               </button>
             </div>
           )}

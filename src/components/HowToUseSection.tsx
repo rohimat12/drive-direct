@@ -1,5 +1,5 @@
 import React from 'react';
-import { Copy, Link2, Sparkles, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Copy, Link2, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export default function HowToUseSection() {
   const steps = [

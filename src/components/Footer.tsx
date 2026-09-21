@@ -1,6 +1,6 @@
 import React from 'react';
 import Link from 'next/link';
-import { HardDriveDownload, Shield, FileText, HelpCircle, Mail, ExternalLink } from 'lucide-react';
+import { HardDriveDownload, Shield, FileText, Mail, ExternalLink } from 'lucide-react';
 
 export default function Footer() {
   return (

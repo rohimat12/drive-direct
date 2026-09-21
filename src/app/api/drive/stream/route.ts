@@ -68,7 +68,7 @@ export async function GET(req: NextRequest) {
     // Extract filename from disposition if available
     const disposition = upstreamRes.headers.get('content-disposition') || '';
     const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
-    let fileName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/["']/g, '')) : `download_${fileId}`;
+    const fileName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/["']/g, '')) : `download_${fileId}`;
 
     // Clean ASCII fallback (keeps spaces intact, avoids %20 in legacy browsers) and UTF-8 encoded parameter per RFC 6266
     const asciiFallback = fileName.replace(/[^\x20-\x7E]/g, '_').replace(/"/g, '\\"');
@@ -111,7 +111,7 @@ export async function GET(req: NextRequest) {
     // Allow iframe embedding within our own application
     responseHeaders.delete('x-frame-options');
 
-    return new NextResponse(upstreamRes.body as any, {
+    return new NextResponse(upstreamRes.body as unknown as BodyInit, {
       status: upstreamRes.status,
       headers: responseHeaders,
     });

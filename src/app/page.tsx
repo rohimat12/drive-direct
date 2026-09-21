@@ -11,7 +11,7 @@ import FeaturesExplanationSection from '@/components/FeaturesExplanationSection'
 import FaqSection from '@/components/FaqSection';
 import Footer from '@/components/Footer';
 import { DriveFileInfo } from '@/lib/drive';
-import { AlertCircle, Zap, ShieldCheck, Cpu, HardDrive, RefreshCw } from 'lucide-react';
+import { AlertCircle, Zap, ShieldCheck, Cpu, HardDrive } from 'lucide-react';
 
 const STORAGE_KEY = 'drive_direct_history_v1';
 
@@ -22,12 +22,15 @@ export default function Home() {
   const [previewFile, setPreviewFile] = useState<DriveFileInfo | null>(null);
   const [history, setHistory] = useState<DriveFileInfo[]>([]);
 
-  // Load history from localStorage on mount
+  // Load history from localStorage on mount (asynchronous to prevent cascading renders)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
-        setHistory(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        setTimeout(() => {
+          setHistory(parsed);
+        }, 0);
       }
     } catch (e) {
       console.error('Failed to load history:', e);

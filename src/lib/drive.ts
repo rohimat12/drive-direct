@@ -92,7 +92,10 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
   try {
     const cookieJar = new Map<string, string>();
     const collectCookies = (headers: Headers) => {
-      const getSetCookie = (headers as any).getSetCookie?.bind(headers);
+      const headersWithSetCookie = headers as unknown as { getSetCookie?: () => string[] };
+      const getSetCookie = typeof headersWithSetCookie.getSetCookie === 'function' 
+        ? headersWithSetCookie.getSetCookie.bind(headers) 
+        : undefined;
       const cookiesList: string[] = getSetCookie ? getSetCookie() : [];
       for (const cookieStr of cookiesList) {
         const [cookiePair] = cookieStr.split(';');
@@ -243,7 +246,7 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
           uuidVal = uuidMatch[1];
         }
 
-        let confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${encodeURIComponent(confirmToken)}${
+        const confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${encodeURIComponent(confirmToken)}${
           uuidVal ? `&uuid=${encodeURIComponent(uuidVal)}` : ''
         }`;
 

@@ -23,12 +23,6 @@ interface MediaPreviewModalProps {
 export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPreviewModalProps) {
   // Default to native HTML5 canvas PDF viewer for 100% reliable rendering
   const [pdfMode, setPdfMode] = useState<'native' | 'google'>('native');
-  // Boolean flag for safe image fallback without string URL comparison
-  const [useImageFallback, setUseImageFallback] = useState(false);
-
-  useEffect(() => {
-    setUseImageFallback(false);
-  }, [fileInfo, isOpen]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -167,22 +161,7 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
           )}
 
           {fileInfo.mediaType === 'image' && (
-            <div className="flex items-center justify-center p-2 max-h-[72vh] overflow-auto">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={
-                  useImageFallback
-                    ? `https://drive.google.com/thumbnail?id=${fileInfo.fileId}&sz=w2048`
-                    : `${fileInfo.streamUrl}${fileInfo.streamUrl.includes('?') ? '&' : '?'}inline=true`
-                }
-                alt={fileInfo.fileName}
-                className="max-h-[68vh] max-w-full rounded-xl object-contain shadow-2xl transition-all"
-                onError={() => {
-                  // Safely trigger Google Drive high-resolution thumbnail fallback
-                  setUseImageFallback(true);
-                }}
-              />
-            </div>
+            <ImagePreviewItem key={fileInfo.fileId} fileInfo={fileInfo} />
           )}
 
           {fileInfo.mediaType === 'pdf' && (
@@ -208,7 +187,6 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
               ) : (
                 <PdfCanvasViewer
                   url={nativePdfUrl}
-                  fileName={fileInfo.fileName}
                 />
               )}
             </div>
@@ -233,6 +211,25 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
           </a>
         </div>
       </div>
+    </div>
+  );
+}
+
+function ImagePreviewItem({ fileInfo }: { fileInfo: DriveFileInfo }) {
+  const [useFallback, setUseFallback] = useState(false);
+  const src = useFallback
+    ? `https://drive.google.com/thumbnail?id=${fileInfo.fileId}&sz=w2048`
+    : `${fileInfo.streamUrl}${fileInfo.streamUrl.includes('?') ? '&' : '?'}inline=true`;
+
+  return (
+    <div className="flex items-center justify-center p-2 max-h-[72vh] overflow-auto">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={fileInfo.fileName}
+        className="max-h-[68vh] max-w-full rounded-xl object-contain shadow-2xl transition-all"
+        onError={() => setUseFallback(true)}
+      />
     </div>
   );
 }
