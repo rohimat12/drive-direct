@@ -67,9 +67,13 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
     }
   };
 
-  const curlCommand = `curl -L -o "${fileInfo.fileName}" "${fileInfo.directUrl}"`;
-  const wgetCommand = `wget --content-disposition -O "${fileInfo.fileName}" "${fileInfo.directUrl}"`;
-  const ariaCommand = `aria2c -x 16 -s 16 -o "${fileInfo.fileName}" "${fileInfo.directUrl}"`;
+  // Sanitize filename and URL to prevent terminal injection
+  const safeFileName = fileInfo.fileName.replace(/["\\$`!]/g, '_');
+  const safeDirectUrl = fileInfo.directUrl.replace(/"/g, '%22');
+
+  const curlCommand = `curl -L -o "${safeFileName}" "${safeDirectUrl}"`;
+  const wgetCommand = `wget --content-disposition -O "${safeFileName}" "${safeDirectUrl}"`;
+  const ariaCommand = `aria2c -x 16 -s 16 -o "${safeFileName}" "${safeDirectUrl}"`;
 
   return (
     <div className="glass-panel glass-panel-hover relative overflow-hidden rounded-3xl p-6 sm:p-8">
@@ -119,11 +123,9 @@ export default function FileResultCard({ fileInfo, onOpenPreview }: FileResultCa
 
         {/* Primary Action Buttons */}
         <div className="flex flex-wrap sm:flex-nowrap items-center gap-3 w-full md:w-auto">
-          {/* Direct Download Button */}
+          {/* Direct Download Button (Same-origin proxy with attachment header for 100% filename preservation) */}
           <a
-            href={fileInfo.directUrl}
-            target="_blank"
-            rel="noopener noreferrer"
+            href={fileInfo.downloadUrl}
             download={fileInfo.fileName}
             className="flex-1 sm:flex-none flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-3.5 font-semibold text-white shadow-lg shadow-cyan-500/25 hover:from-cyan-400 hover:to-blue-500 hover:shadow-cyan-500/40 transition-all text-sm"
           >

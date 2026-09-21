@@ -21,7 +21,8 @@ interface MediaPreviewModalProps {
 }
 
 export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPreviewModalProps) {
-  const [pdfMode, setPdfMode] = useState<'google' | 'native'>('google');
+  // Default to native HTML5 canvas PDF viewer for 100% reliable rendering
+  const [pdfMode, setPdfMode] = useState<'native' | 'google'>('native');
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -40,7 +41,8 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
   if (!isOpen || !fileInfo) return null;
 
   const googlePreviewUrl = `https://drive.google.com/file/d/${fileInfo.fileId}/preview`;
-  const nativePdfUrl = `/api/drive/stream?id=${fileInfo.fileId}&inline=true`;
+  // Preserve any confirm and uuid parameters from streamUrl for large PDFs
+  const nativePdfUrl = `${fileInfo.streamUrl}${fileInfo.streamUrl.includes('?') ? '&' : '?'}inline=true`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 lg:p-8">
@@ -81,17 +83,6 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
               <div className="hidden sm:flex items-center gap-1 bg-slate-800/80 p-1 rounded-lg border border-white/5 text-xs mr-2">
                 <button
                   type="button"
-                  onClick={() => setPdfMode('google')}
-                  className={`px-2.5 py-1 rounded-md transition ${
-                    pdfMode === 'google'
-                      ? 'bg-cyan-500 text-white font-medium shadow-sm'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                >
-                  Google Viewer
-                </button>
-                <button
-                  type="button"
                   onClick={() => setPdfMode('native')}
                   className={`px-2.5 py-1 rounded-md transition ${
                     pdfMode === 'native'
@@ -100,6 +91,17 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
                   }`}
                 >
                   Native PDF
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setPdfMode('google')}
+                  className={`px-2.5 py-1 rounded-md transition ${
+                    pdfMode === 'google'
+                      ? 'bg-cyan-500 text-white font-medium shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  Google Viewer
                 </button>
               </div>
             )}
@@ -116,9 +118,8 @@ export default function MediaPreviewModal({ isOpen, onClose, fileInfo }: MediaPr
             </a>
 
             <a
-              href={fileInfo.directUrl}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={fileInfo.downloadUrl}
+              download={fileInfo.fileName}
               className="flex items-center gap-1.5 rounded-lg bg-cyan-600 px-3.5 py-1.5 text-xs font-semibold text-white hover:bg-cyan-500 transition shadow-md shadow-cyan-600/20"
             >
               <Download className="h-3.5 w-3.5" />

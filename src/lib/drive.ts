@@ -6,9 +6,12 @@ export interface DriveFileInfo {
   contentType: string;
   directUrl: string;
   streamUrl: string;
+  downloadUrl: string;
   mediaType: 'video' | 'audio' | 'image' | 'pdf' | 'archive' | 'code' | 'document' | 'other';
   canPreview: boolean;
   isConfirmRequired: boolean;
+  confirmToken?: string;
+  uuid?: string;
   confirmUrl?: string;
   status: 'ok' | 'quota_exceeded' | 'access_denied' | 'not_found' | 'error';
   errorMessage?: string;
@@ -83,9 +86,29 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
   const initialUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
 
   const defaultDirectUrl = directCdnUrl;
-  const streamUrl = `/api/drive/stream?id=${fileId}`;
+  const defaultStreamUrl = `/api/drive/stream?id=${fileId}`;
+  const defaultDownloadUrl = `/api/drive/stream?id=${fileId}&download=true`;
 
   try {
+    const cookieJar = new Map<string, string>();
+    const collectCookies = (headers: Headers) => {
+      const getSetCookie = (headers as any).getSetCookie?.bind(headers);
+      const cookiesList: string[] = getSetCookie ? getSetCookie() : [];
+      for (const cookieStr of cookiesList) {
+        const [cookiePair] = cookieStr.split(';');
+        const [name, ...valParts] = cookiePair.split('=');
+        if (name && valParts.length > 0) {
+          cookieJar.set(name.trim(), valParts.join('=').trim());
+        }
+      }
+    };
+
+    const buildCookieHeader = () => {
+      return Array.from(cookieJar.entries())
+        .map(([k, v]) => `${k}=${v}`)
+        .join('; ');
+    };
+
     const res = await fetch(initialUrl, {
       headers: {
         'User-Agent':
@@ -96,16 +119,14 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
       redirect: 'manual',
     });
 
+    collectCookies(res.headers);
+
     let targetUrl = initialUrl;
     let finalRes: Response;
-    let cookieHeader = '';
-
-    // Collect set-cookies if any
-    const cookies = res.headers.getSetCookie ? res.headers.getSetCookie() : [];
-    cookieHeader = cookies.map((c) => c.split(';')[0]).join('; ');
 
     if (res.status >= 300 && res.status < 400) {
       targetUrl = res.headers.get('location') || directCdnUrl;
+      const cookieHeader = buildCookieHeader();
       finalRes = await fetch(targetUrl, {
         headers: {
           'User-Agent':
@@ -114,6 +135,7 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
         },
         redirect: 'follow',
       });
+      collectCookies(finalRes.headers);
     } else {
       finalRes = res;
     }
@@ -123,7 +145,7 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
     const contentLengthStr = finalRes.headers.get('content-length');
     const fileSizeBytes = contentLengthStr ? parseInt(contentLengthStr, 10) : null;
 
-    // Check if it returned an HTML page (meaning virus warning or error page)
+    // Check if it returned an HTML page (virus warning or error page)
     if (contentType.includes('text/html')) {
       const htmlText = await finalRes.text();
 
@@ -140,7 +162,8 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
           fileSizeFormatted: 'Limit Tercapai',
           contentType: 'text/html',
           directUrl: defaultDirectUrl,
-          streamUrl,
+          streamUrl: defaultStreamUrl,
+          downloadUrl: defaultDownloadUrl,
           mediaType: 'other',
           canPreview: false,
           isConfirmRequired: false,
@@ -162,7 +185,8 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
           fileSizeFormatted: 'Perlu Akses',
           contentType: 'text/html',
           directUrl: defaultDirectUrl,
-          streamUrl,
+          streamUrl: defaultStreamUrl,
+          downloadUrl: defaultDownloadUrl,
           mediaType: 'other',
           canPreview: false,
           isConfirmRequired: false,
@@ -184,7 +208,8 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
           fileSizeFormatted: 'Tidak Ditemukan',
           contentType: 'text/html',
           directUrl: defaultDirectUrl,
-          streamUrl,
+          streamUrl: defaultStreamUrl,
+          downloadUrl: defaultDownloadUrl,
           mediaType: 'other',
           canPreview: false,
           isConfirmRequired: false,
@@ -200,21 +225,43 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
         htmlText.includes("confirm=");
 
       if (isVirusWarning) {
-        // Extract confirm token or form action
-        let confirmUrl = defaultDirectUrl;
-        const confirmTokenMatch = htmlText.match(/name="confirm"\s+value="([^"]+)"/) || htmlText.match(/confirm=([0-9a-zA-Z_-]+)/);
-        const uuidMatch = htmlText.match(/name="uuid"\s+value="([^"]+)"/);
+        // Extract confirm token and uuid from form or URL
+        let confirmToken = 't';
+        let uuidVal = '';
 
+        const confirmTokenMatch =
+          htmlText.match(/name="confirm"\s+value="([^"]+)"/) ||
+          htmlText.match(/confirm=([0-9a-zA-Z_-]+)/);
         if (confirmTokenMatch) {
-          const confirmToken = confirmTokenMatch[1];
-          confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${confirmToken}${uuidMatch ? `&uuid=${uuidMatch[1]}` : ''}`;
-        } else {
-          confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=t`;
+          confirmToken = confirmTokenMatch[1];
         }
+
+        const uuidMatch =
+          htmlText.match(/name="uuid"\s+value="([^"]+)"/) ||
+          htmlText.match(/uuid=([0-9a-zA-Z_-]+)/);
+        if (uuidMatch) {
+          uuidVal = uuidMatch[1];
+        }
+
+        let confirmUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${encodeURIComponent(confirmToken)}${
+          uuidVal ? `&uuid=${encodeURIComponent(uuidVal)}` : ''
+        }`;
+
+        // Build dynamic streamUrl and downloadUrl containing the required confirm & uuid parameters!
+        const streamParams = new URLSearchParams({
+          id: fileId,
+          confirm: confirmToken,
+        });
+        if (uuidVal) streamParams.set('uuid', uuidVal);
+
+        const dynamicStreamUrl = `/api/drive/stream?${streamParams.toString()}`;
+        const dynamicDownloadUrl = `/api/drive/stream?${streamParams.toString()}&download=true`;
 
         // Try to parse filename from title or span
         let extractedName = `large_file_${fileId}`;
-        const titleMatch = htmlText.match(/<title>(.*?) - Google Drive<\/title>/i) || htmlText.match(/class="uc-name-size"[^>]*><a[^>]*>(.*?)<\/a>/i);
+        const titleMatch =
+          htmlText.match(/<title>(.*?) - Google Drive<\/title>/i) ||
+          htmlText.match(/class="uc-name-size"[^>]*><a[^>]*>(.*?)<\/a>/i);
         if (titleMatch && titleMatch[1]) {
           extractedName = titleMatch[1].trim();
         }
@@ -228,10 +275,13 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
           fileSizeFormatted: '> 100 MB (File Besar)',
           contentType: 'application/octet-stream',
           directUrl: confirmUrl,
-          streamUrl,
+          streamUrl: dynamicStreamUrl,
+          downloadUrl: dynamicDownloadUrl,
           mediaType,
           canPreview: ['video', 'audio', 'image', 'pdf'].includes(mediaType),
           isConfirmRequired: true,
+          confirmToken,
+          uuid: uuidVal || undefined,
           confirmUrl,
           status: 'ok',
         };
@@ -261,7 +311,8 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
       fileSizeFormatted: formatBytes(fileSizeBytes),
       contentType: resolvedContentType,
       directUrl: targetUrl.startsWith('http') ? targetUrl : defaultDirectUrl,
-      streamUrl,
+      streamUrl: defaultStreamUrl,
+      downloadUrl: defaultDownloadUrl,
       mediaType,
       canPreview: ['video', 'audio', 'image', 'pdf'].includes(mediaType),
       isConfirmRequired: false,
@@ -276,7 +327,8 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
       fileSizeFormatted: 'Error',
       contentType: 'unknown',
       directUrl: defaultDirectUrl,
-      streamUrl,
+      streamUrl: defaultStreamUrl,
+      downloadUrl: defaultDownloadUrl,
       mediaType: 'other',
       canPreview: false,
       isConfirmRequired: false,

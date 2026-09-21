@@ -48,7 +48,16 @@ export default function Home() {
     setHistory([]);
   };
 
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+
   const handleInspect = async (url: string) => {
+    // Abort previous in-flight request if any
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+
     setIsLoading(true);
     setErrorMsg(null);
     setCurrentFile(null);
@@ -58,6 +67,7 @@ export default function Home() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ url }),
+        signal: controller.signal,
       });
 
       const data = await res.json();
@@ -71,9 +81,14 @@ export default function Home() {
       saveToHistory(data.data);
     } catch (err: unknown) {
       const error = err as Error;
+      if (error.name === 'AbortError') {
+        return; // Ignore aborted requests
+      }
       setErrorMsg(error.message || 'Terjadi kesalahan jaringan.');
     } finally {
-      setIsLoading(false);
+      if (abortControllerRef.current === controller) {
+        setIsLoading(false);
+      }
     }
   };
 

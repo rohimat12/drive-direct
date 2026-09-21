@@ -4,15 +4,22 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const fileId = searchParams.get('id');
   const confirm = searchParams.get('confirm') || '';
+  const uuid = searchParams.get('uuid') || '';
   const isInline = searchParams.get('inline') === 'true' || searchParams.has('inline');
+  const isDownload = searchParams.get('download') === 'true';
 
   if (!fileId) {
     return new NextResponse('File ID parameter missing', { status: 400 });
   }
 
-  const directUrl = confirm
-    ? `https://drive.usercontent.google.com/download?id=${fileId}&export=download&confirm=${confirm}`
-    : `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+  // Construct target usercontent URL including confirm & uuid if present
+  let directUrl = `https://drive.usercontent.google.com/download?id=${fileId}&export=download`;
+  if (confirm) {
+    directUrl += `&confirm=${encodeURIComponent(confirm)}`;
+  }
+  if (uuid) {
+    directUrl += `&uuid=${encodeURIComponent(uuid)}`;
+  }
 
   const clientRange = req.headers.get('range');
   const headers: Record<string, string> = {
@@ -50,7 +57,6 @@ export async function GET(req: NextRequest) {
       if (val) responseHeaders.set(h, val);
     }
 
-    // Default to accept-ranges
     if (!responseHeaders.has('accept-ranges')) {
       responseHeaders.set('accept-ranges', 'bytes');
     }
@@ -58,18 +64,25 @@ export async function GET(req: NextRequest) {
     // Extract filename from disposition if available
     const disposition = upstreamRes.headers.get('content-disposition') || '';
     const filenameMatch = disposition.match(/filename\*?=(?:UTF-8'')?"?([^";]+)"?/i);
-    const fileName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/["']/g, '')) : '';
+    let fileName = filenameMatch ? decodeURIComponent(filenameMatch[1].replace(/["']/g, '')) : `download_${fileId}`;
 
-    // If inline viewing or PDF requested
-    if (isInline || fileName.toLowerCase().endsWith('.pdf')) {
+    // If explicit download requested via proxy
+    if (isDownload) {
+      // Force attachment disposition so browser triggers file save dialog with exact filename
+      responseHeaders.set(
+        'content-disposition',
+        `attachment; filename="${encodeURIComponent(fileName)}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
+      );
+    } else if (isInline || fileName.toLowerCase().endsWith('.pdf')) {
+      // If inline preview requested
       if (fileName.toLowerCase().endsWith('.pdf')) {
         responseHeaders.set('content-type', 'application/pdf');
-        responseHeaders.set('content-disposition', `inline; filename="${fileName}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
       } else if (fileName.toLowerCase().endsWith('.mp4')) {
         responseHeaders.set('content-type', 'video/mp4');
-        responseHeaders.set('content-disposition', `inline; filename="${fileName}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
       } else {
-        responseHeaders.set('content-disposition', `inline; filename="${fileName}"`);
+        responseHeaders.set('content-disposition', `inline; filename="${encodeURIComponent(fileName)}"`);
       }
     }
 
