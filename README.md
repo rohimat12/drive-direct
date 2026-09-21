@@ -1,5 +1,7 @@
 # 🚀 DriveDirect — Google Drive Direct Link Generator & Stream Downloader
 
+🌐 **Live Demo Website:** [https://drive-direct-xi.vercel.app/](https://drive-direct-xi.vercel.app/)
+
 Aplikasi web modern, interaktif, dan berkecepatan tinggi untuk mengonversi tautan publik Google Drive menjadi **direct download link 1-klik**, mengekstrak metadata file secara instan, serta memutar media (video, audio, gambar, dan dokumen PDF) langsung di dalam peramban tanpa terhalang pratinjau atau pembatasan CORS.
 
 Dibangun menggunakan **Next.js 16 (App Router)**, **TypeScript**, dan **Tailwind CSS v4**.
@@ -85,11 +87,10 @@ Aplikasi ini sudah diprogram secara *native* agar ramah perayap (*crawlers*) Goo
 | **JSON-LD Schema** | Skema `WebApplication` | Memberikan *rich snippets* di halaman hasil pencarian Google |
 
 ### 💡 Cara Mendaftarkan ke Google Search Console:
-1. Deploy proyek ke Vercel (misal: `https://drive-direct.vercel.app`).
-2. Masuk ke [Google Search Console](https://search.google.com/search-console).
-3. Tambahkan properti URL Prefix (`https://drive-direct.vercel.app`).
-4. Buka menu **Sitemaps** di panel kiri, lalu masukkan: `sitemap.xml` dan klik **Submit**.
-5. Buka **URL Inspection**, masukkan URL utama situs Anda, lalu klik **"Request Indexing"** agar segera dirayapi oleh Google.
+1. Masuk ke [Google Search Console](https://search.google.com/search-console).
+2. Tambahkan properti URL Prefix: `https://drive-direct-xi.vercel.app/`.
+3. Buka menu **Sitemaps** di panel kiri, masukkan: `sitemap.xml` dan klik **Submit**.
+4. Buka menu **URL Inspection**, masukkan: `https://drive-direct-xi.vercel.app/`, lalu klik **"Request Indexing"** agar segera dirayapi oleh Googlebot.
 
 ---
 
