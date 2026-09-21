@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
         'content-disposition',
         `attachment; filename="${asciiFallback}"; filename*=UTF-8''${utf8Encoded}`
       );
-    } else if (isInline || fileName.match(/\.(pdf|jpe?g|png|webp|gif|svg|mp4|webm|mp3)$/i)) {
+    } else if (isInline || fileName.match(/\.(pdf|jpe?g|png|webp|gif|svg|bmp|mp4|webm|mp3)$/i)) {
       // If inline preview requested or known media extension
       const lower = fileName.toLowerCase();
       if (lower.endsWith('.pdf')) {
@@ -96,6 +96,8 @@ export async function GET(req: NextRequest) {
         responseHeaders.set('content-type', 'image/gif');
       } else if (lower.endsWith('.svg')) {
         responseHeaders.set('content-type', 'image/svg+xml');
+      } else if (lower.endsWith('.bmp')) {
+        responseHeaders.set('content-type', 'image/bmp');
       } else if (lower.endsWith('.mp3')) {
         responseHeaders.set('content-type', 'audio/mpeg');
       }

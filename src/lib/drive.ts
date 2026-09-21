@@ -311,6 +311,10 @@ export async function inspectGoogleDriveFile(fileId: string): Promise<DriveFileI
       resolvedContentType = 'image/webp';
     } else if (lowerName.endsWith('.gif') && resolvedContentType.includes('octet-stream')) {
       resolvedContentType = 'image/gif';
+    } else if (lowerName.endsWith('.svg') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/svg+xml';
+    } else if (lowerName.endsWith('.bmp') && resolvedContentType.includes('octet-stream')) {
+      resolvedContentType = 'image/bmp';
     }
 
     const mediaType = detectMediaType(resolvedContentType, fileName);
